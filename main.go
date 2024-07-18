@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -9,7 +10,9 @@ import (
 	"path"
 	"strings"
 
+	"github.com/gitsang/notation/pkg/soundslice"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 type File struct {
@@ -101,15 +104,56 @@ func PreviewHandler(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		logger.Info("Serving")
 	}()
+
+	_ = client.DeleteNotation(r.Context(), lastSliceId)
+
+	sliceId, err := client.CreateNotation(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	logger = logger.With(slog.String("sliceId", sliceId))
+	lastSliceId = sliceId
+
+	fh, err := os.Open(filepath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer fh.Close()
+
+	_, err = client.UploadNotation(r.Context(), sliceId, fh)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	notation := Notation{
 		Title: strings.TrimSuffix(path.Base(filepath), ".gp"),
-		URL:   "https://www.soundslice.com/slices/P6Gzc/embed/",
+		URL:   fmt.Sprintf("https://www.soundslice.com/slices/%s/embed/", sliceId),
 	}
 	t, _ := template.ParseFiles("notation.html")
 	t.Execute(w, notation.ToMap())
 }
 
+var (
+	lastSliceId string
+)
+
+var client *soundslice.Client
+
 func main() {
+	godotenv.Load(".env")
+	sesn := os.Getenv("SESN")
+	client = soundslice.NewClient(
+		soundslice.WithSesn(sesn),
+		soundslice.WithLogHandler(slog.NewJSONHandler(os.Stdout,
+			&slog.HandlerOptions{
+				AddSource: true,
+				Level:     slog.LevelDebug,
+			})),
+	)
+
 	router := mux.NewRouter()
 	router.PathPrefix("/preview").HandlerFunc(PreviewHandler)
 	router.PathPrefix("/css").Handler(http.StripPrefix("/css", http.FileServer(http.Dir("css"))))
