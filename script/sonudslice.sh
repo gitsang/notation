@@ -8,7 +8,7 @@ enable_embed() {
     local score_id=${1}
     curl -XPOST -sSL "https://www.soundslice.com/api/v1/scores/${score_id}/" \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" \
+        -H "cookie: sesn=${SESN}" \
         -H "content-type: application/x-www-form-urlencoded" \
         -d 'embed_status=4'
 }
@@ -17,7 +17,7 @@ disable_embed() {
     local score_id=${1}
     curl -XPOST -sSL "https://www.soundslice.com/api/v1/scores/${score_id}/" \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" \
+        -H "cookie: sesn=${SESN}" \
         -H "content-type: application/x-www-form-urlencoded" \
         -d 'embed_status=1'
 }
@@ -26,14 +26,14 @@ get_score_id() {
     local slice_id=${1}
     curl -XGET -sSL https://www.soundslice.com/slices/${slice_id}/edit/scoredata/ \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" \
+        -H "cookie: sesn=${SESN}" \
         | jq -r '.slug'
 }
 
 create_notation() {
     curl -XPOST -sSL https://www.soundslice.com/manage/create-via-import/ \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" | \
+        -H "cookie: sesn=${SESN}" | \
         grep title-practice-lists | \
         sed 's/.*slice="\(.*\)".*/\1/'
 }
@@ -44,7 +44,7 @@ upload_notation() {
     curl -XPOST -sSL "https://www.soundslice.com/api/v1/slices/${slice_id}/notation/" \
         -H "content-type: multipart/form-data" \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" \
+        -H "cookie: sesn=${SESN}" \
         -F "type=application/octet-stream" \
         -F "score=@${file}" | jq -r '.name'
 }
@@ -53,7 +53,7 @@ delete_notation() {
     local slice_id=${1}
     curl -XPOST -sSL "https://www.soundslice.com/api/v1/slices/delete-multiple/" \
         -H "referer: https://www.soundslice.com" \
-        -H "cookie: sesn=${sesn}" \
+        -H "cookie: sesn=${SESN}" \
         -H 'content-type: application/x-www-form-urlencoded' \
         -d "ids=${slice_id}"
 }
