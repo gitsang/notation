@@ -44,4 +44,10 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("UploadNotation success.", uploadResp)
+
+	err = client.DeleteNotation(ctx, sliceId)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("DeleteNotation success.")
 }
