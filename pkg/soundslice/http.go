@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -117,13 +116,6 @@ func (c *Client) HTTPRequest(ctx context.Context, opts RequestOptions, respBody 
 		err = errors.WithStack(errors.Wrap(err, "response body unmarshal failed"))
 		logger = logger.With(slog.Any("err", err))
 		return err
-	}
-
-	return nil
-
-	if err != nil {
-		logger = logger.With(slog.Any("err", err))
-		return errors.New(strings.ReplaceAll(err.Error(), "\n", " "))
 	}
 
 	return nil

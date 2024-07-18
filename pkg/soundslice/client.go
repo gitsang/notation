@@ -48,22 +48,21 @@ func WithHTTPClient(h *http.Client) ClientOptionFunc {
 	}
 }
 
+func defaultClient() *Client {
+	return &Client{
+		address:    "https://www.soundslice.com",
+		username:   "",
+		password:   "",
+		sesn:       "",
+		logHandler: nil,
+		httpClient: http.DefaultClient,
+	}
+}
+
 func NewClient(opts ...ClientOptionFunc) *Client {
-	c := &Client{}
+	c := defaultClient()
 	for _, opt := range opts {
 		opt(c)
 	}
 	return c
-}
-
-func (c *Client) CreateNotation() (sliceId string, err error) {
-	var (
-		method       = http.MethodPost
-		path         = "/manage/create-via-import"
-		responseBody = ListResponse{
-			Items: &results,
-		}
-		err error
-	)
-
 }
