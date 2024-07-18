@@ -26,13 +26,20 @@ func main() {
 
 	ctx := context.Background()
 
-	sliceId, err := client.CreateNotation()
+	sliceId, err := client.CreateNotation(ctx)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("CreateNotation success. sliceId:", sliceId)
 
-	uploadResp, err := client.UploadNotation(ctx, sliceId, "./Yellow.gp")
+	// open file
+	fh, err := os.Open("./Yellow.gp")
+	if err != nil {
+		panic(err)
+	}
+	defer fh.Close()
+
+	uploadResp, err := client.UploadNotation(ctx, sliceId, fh)
 	if err != nil {
 		panic(err)
 	}

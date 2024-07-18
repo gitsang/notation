@@ -10,13 +10,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
 )
 
-func (c *Client) CreateNotation() (sliceId string, err error) {
+func (c *Client) CreateNotation(_ context.Context) (sliceId string, err error) {
 	var (
 		entryTime = time.Now()
 		logger    = slog.New(c.logHandler)
@@ -75,7 +76,7 @@ type UploadNotationResponse struct {
 	Name string `json:"name"`
 }
 
-func (c *Client) UploadNotation(ctx context.Context, sliceId string, filename string) (*UploadNotationResponse, error) {
+func (c *Client) UploadNotation(ctx context.Context, sliceId string, fh *os.File) (*UploadNotationResponse, error) {
 	var (
 		entryTime = time.Now()
 		logger    = slog.New(c.logHandler)
@@ -90,53 +91,33 @@ func (c *Client) UploadNotation(ctx context.Context, sliceId string, filename st
 		path   = fmt.Sprintf("/api/v1/slices/%s/notation/", sliceId)
 	)
 
-	// new multipart request
 	reqBody := &bytes.Buffer{}
 	writer := multipart.NewWriter(reqBody)
 	defer writer.Close()
-
-	// create form file
-	formWriter, err := writer.CreateFormFile("score", filename)
+	formWriter, err := writer.CreateFormFile("score", filepath.Base(fh.Name()))
 	if err != nil {
 		err = errors.WithStack(err)
 		logger = logger.With(slog.Any("err", err))
 		return nil, err
 	}
-
-	// open file
-	fh, err := os.Open(filename)
-	if err != nil {
-		err = errors.WithStack(err)
-		logger = logger.With(slog.Any("err", err))
-		return nil, err
-	}
-	defer fh.Close()
-
-	// copy body
 	_, err = io.Copy(formWriter, fh)
 	if err != nil {
 		err = errors.WithStack(err)
 		logger = logger.With(slog.Any("err", err))
 		return nil, err
 	}
-
-	// set form type
 	writer.WriteField("type", "application/octet-stream")
 
-	// new request
 	req, err := http.NewRequest(method, c.address+path, reqBody)
 	if err != nil {
 		err = errors.WithStack(err)
 		logger = logger.With(slog.Any("err", err))
 		return nil, err
 	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// authenticate
 	req.AddCookie(&http.Cookie{Name: "sesn", Value: c.sesn})
 	req.Header.Set("Referer", c.address)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	// do request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		err = errors.WithStack(err)
@@ -145,7 +126,6 @@ func (c *Client) UploadNotation(ctx context.Context, sliceId string, filename st
 	}
 	defer resp.Body.Close()
 
-	// check response
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		respBody, _ := io.ReadAll(resp.Body)
 		err = errors.WithStack(fmt.Errorf("response status %s: %s", resp.Status, string(respBody)))
@@ -153,7 +133,6 @@ func (c *Client) UploadNotation(ctx context.Context, sliceId string, filename st
 		return nil, err
 	}
 
-	// decode response
 	var result UploadNotationResponse
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
