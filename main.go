@@ -128,6 +128,18 @@ func PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	scoreId, err := client.GetScoreId(sliceId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = client.EnableEmbed(scoreId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	notation := Notation{
 		Title: strings.TrimSuffix(path.Base(filepath), ".gp"),
 		URL:   fmt.Sprintf("https://www.soundslice.com/slices/%s/embed/", sliceId),
