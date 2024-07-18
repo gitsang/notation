@@ -58,6 +58,12 @@ delete_notation() {
         -d "ids=${slice_id}"
 }
 
+list_scores() {
+    curl -XGET -sSL "https://www.soundslice.com/" \
+        -H "referer: https://www.soundslice.com" \
+        -H "cookie: sesn=${SESN}"
+}
+
 generate_html() {
     local slice_id=${1}
     cat <<EOF > index.html
@@ -78,13 +84,15 @@ generate_html() {
 EOF
 }
 
-slice_id=$(cat .cache_slice_id)
-disable_embed $(get_score_id ${slice_id})
-delete_notation ${slice_id}
+# slice_id=$(cat .cache_slice_id)
+# disable_embed $(get_score_id ${slice_id})
+# delete_notation ${slice_id}
 
-slice_id=$(create_notation)
-upload_notation ${slice_id} "${gp_file}"
-enable_embed $(get_score_id ${slice_id})
-generate_html ${slice_id}
+# slice_id=$(create_notation)
+# upload_notation ${slice_id} "${gp_file}"
+# enable_embed $(get_score_id ${slice_id})
+# generate_html ${slice_id}
 
-echo ${slice_id} > .cache_slice_id
+# echo ${slice_id} > .cache_slice_id
+
+list_scores

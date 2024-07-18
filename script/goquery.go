@@ -54,6 +54,33 @@ func f2() {
 	}
 }
 
+func f3() {
+	f, err := os.Open("./overview.html")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	doc, err := goquery.NewDocumentFromReader(f)
+	if err != nil {
+		panic(err)
+	}
+
+	doc.Find("div.slice-item.slice-item-full").Each(func(i int, s *goquery.Selection) {
+		scoreId, _ := s.Attr("data-score")
+		fmt.Println("ScoreId:", scoreId)
+		name := s.Find("a.slice-item-title").Text()
+		words := strings.Fields(name)
+		name = strings.Join(words, " ")
+		fmt.Println("Name:", name)
+		s.Find("div.slice-item-info").Each(func(j int, info *goquery.Selection) {
+			info.Find("span.only10col").Each(func(k int, span *goquery.Selection) {
+				fmt.Println("Value:", span.Find("span.text-muted").Text())
+			})
+		})
+	})
+}
+
 func main() {
-	f2()
+	f3()
 }

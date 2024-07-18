@@ -105,7 +105,34 @@ func PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		logger.Info("Serving")
 	}()
 
-	_ = client.DeleteNotation(r.Context(), lastSliceId)
+	fh, err := os.Open(filepath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer fh.Close()
+
+	scores, err := client.ListScores()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	logger = logger.With(slog.Any("scores", scores))
+
+	for _, score := range scores {
+		if score.Embeddable {
+			scoreId, err := client.GetScoreId(score.SliceId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			err = client.DisableEmbed(scoreId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}
 
 	sliceId, err := client.CreateNotation(r.Context())
 	if err != nil {
@@ -113,14 +140,6 @@ func PreviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	logger = logger.With(slog.String("sliceId", sliceId))
-	lastSliceId = sliceId
-
-	fh, err := os.Open(filepath)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer fh.Close()
 
 	_, err = client.UploadNotation(r.Context(), sliceId, fh)
 	if err != nil {
@@ -147,10 +166,6 @@ func PreviewHandler(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("notation.html")
 	t.Execute(w, notation.ToMap())
 }
-
-var (
-	lastSliceId string
-)
 
 var client *soundslice.Client
 

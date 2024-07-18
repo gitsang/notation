@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,20 +11,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
-	godotenv.Load(".env")
-	sesn := os.Getenv("SESN")
-
-	client := soundslice.NewClient(
-		soundslice.WithLogHandler(slog.NewJSONHandler(os.Stdout,
-			&slog.HandlerOptions{
-				AddSource: true,
-				Level:     slog.LevelDebug,
-			})),
-		soundslice.WithAddr("https://www.soundslice.com"),
-		soundslice.WithSesn(sesn),
-	)
-
+func f1(client *soundslice.Client) {
 	ctx := context.Background()
 
 	sliceId, err := client.CreateNotation(ctx)
@@ -50,4 +38,30 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("DeleteNotation success.")
+}
+
+func f2(client *soundslice.Client) {
+	scores, err := client.ListScores()
+	if err != nil {
+		panic(err)
+	}
+	scoresJSON, _ := json.Marshal(scores)
+	fmt.Printf("ListScores success. scores: %+v\n", string(scoresJSON))
+
+}
+
+func main() {
+	godotenv.Load(".env")
+	sesn := os.Getenv("SESN")
+	client := soundslice.NewClient(
+		soundslice.WithLogHandler(slog.NewJSONHandler(os.Stdout,
+			&slog.HandlerOptions{
+				AddSource: true,
+				Level:     slog.LevelDebug,
+			})),
+		soundslice.WithAddr("https://www.soundslice.com"),
+		soundslice.WithSesn(sesn),
+	)
+
+	f2(client)
 }
